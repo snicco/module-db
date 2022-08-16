@@ -501,28 +501,32 @@ class Db extends CodeceptionModule implements DbInterface
     }
 
     /**
-     * @param $filePath
+     * @param $configPath
      *
      * @return bool|null|string|string[]
      * @throws \Codeception\Exception\ModuleConfigException
      */
-    private function readSqlFile($filePath)
+    private function readSqlFile($configPath)
     {
-        if (!file_exists(Configuration::projectDir() . $filePath)) {
+        if(file_exists($configPath)) {
+            $dumpFile = $configPath;
+        }elseif (file_exists(Configuration::projectDir().$configPath)){
+            $dumpFile = Configuration::projectDir().$configPath;
+        }else {
             throw new ModuleConfigException(
                 __CLASS__,
-                "\nFile with dump doesn't exist.\n"
-                . "Please, check path for sql file: "
-                . $filePath
+                sprintf(
+                    "Could not find dump file from config value.\nTried:\n%s\nand\n%s",
+                    $configPath,
+                    Configuration::projectDir().$configPath
+                )
             );
         }
-
-        $sql = file_get_contents(Configuration::projectDir() . $filePath);
-
+    
+        $sql = file_get_contents($dumpFile);
+    
         // remove C-style comments (except MySQL directives)
-        $sql = preg_replace('%/\*(?!!\d+).*?\*/%s', '', $sql);
-
-        return $sql;
+        return preg_replace('#/\*(?!!\d+).*?\*/#s', '', $sql);
     }
 
     private function connect($databaseKey, $databaseConfig)
